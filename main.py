@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-from util import check_predictions, prepare_data
+from util import prepare_data, sample_data
 import pyodbc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,24 +51,7 @@ query = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.ResultDateTi
 
 
 def _linear_modelling(data):
-    data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
-    data['CSum'] = Data['Error'].cumsum()
-    values_cum = []
-    values_single = []
-    c_val = 0
-    s_val = 0
-    for index, row in data.iterrows():
-        c_val = row['Error'] + c_val
-        s_val = row['Error'] + s_val
-        if index % 100 == 0:
-            values_single.append([index, s_val, row['Time']])
-            values_cum.append([index, c_val, row['Time']])
-            s_val = 0
-
-    cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
-    single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
-    single_error_data.to_csv(r'C:\error_single.csv')
-    single_error_data.to_csv(r'C:\error_agg.csv')
+    cumulative_error_data, single_error_data = sample_data(data=data, rate=1000)
     x = np.array(cumulative_error_data['tightenings']).reshape((-1, 1))
     y = np.array(cumulative_error_data['error'])
     xs = np.array(single_error_data['tightenings']).reshape((-1, 1))

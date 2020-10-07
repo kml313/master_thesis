@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
@@ -13,7 +14,7 @@ def prepare_data(data):
     data['remove'] = False
 
     for index, row in data.iterrows():
-        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1]\
+        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1] \
               and data['Error_Desc'][index] == data['Error_Desc'][index + 1]
         if val:
             data['GraphValues2'][index] = data['GraphValues'][index + 1]
@@ -39,9 +40,6 @@ def _byte_to_array(data: bytearray, factor=None):
     Returns:
         Numpy array(s) with the extracted data
     """
-    # A bug form the DDS Platform causing some traces to be compressed several times
-    while data[:8] == GZIP_HEADER:
-        data = gzip.decompress(data)
     if factor is not None:
         # pf 6
         data_chunks = np.frombuffer(data, dtype=np.int32)
@@ -70,7 +68,26 @@ def _hex_str_to_array(data: str, num_bytes=4) -> np.ndarray:
     return data_array
 
 
+def sample_data(data, rate=100):
+    data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
+    data['CSum'] = data['Error'].cumsum()
+    values_cum = []
+    values_single = []
+    c_val = 0
+    s_val = 0
+    for index, row in data.iterrows():
+        c_val = row['Error'] + c_val
+        s_val = row['Error'] + s_val
+        if index % rate == 0:
+            values_single.append([index, s_val, row['Time']])
+            values_cum.append([index, c_val, row['Time']])
+            s_val = 0
 
+    cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
+    single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
+    single_error_data.to_csv(r'C:\error_single.csv')
+    cumulative_error_data.to_csv(r'C:\error_agg.csv')
+    return cumulative_error_data, single_error_data
 
 '''
 #Error_data.to_csv(r'C:\error.csv')
@@ -98,5 +115,4 @@ weekly = data.resample('W').mean()
 # plt.show()
 '''
 
-
-#check_predictions(x, y)
+# check_predictions(x, y)
