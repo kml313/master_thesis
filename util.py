@@ -9,12 +9,12 @@ from sklearn.model_selection import train_test_split
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-def prepare_data(data):
+def prepare_data_graph(data):
     data["GraphValues2"] = np.nan
     data['remove'] = False
 
     for index, row in data.iterrows():
-        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1] \
+        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1]\
               and data['Error_Desc'][index] == data['Error_Desc'][index + 1]
         if val:
             data['GraphValues2'][index] = data['GraphValues'][index + 1]
@@ -27,7 +27,17 @@ def prepare_data(data):
     data['remove'] = data.Result_ID.eq(data.Result_ID.shift(-1)) & (data.Error_Desc != "Angle high")
     data = data.drop(data.index[data.remove])
     del data['remove']
-    # data.to_csv(r'C:\graph.csv')
+    #data.to_csv(r'C:\graph.csv')
+
+    return data
+
+
+def prepare_data(data):
+    data['remove'] = False
+    data['remove'] = data.Result_ID.eq(data.Result_ID.shift())
+    data = data.drop(data.index[data.remove])
+    del data['remove']
+    data.to_csv(r'C:\Volvo.csv')
     return data
 
 
@@ -68,8 +78,13 @@ def _hex_str_to_array(data: str, num_bytes=4) -> np.ndarray:
     return data_array
 
 
-def sample_data(data, rate=100):
-    data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
+def sample_data(data, rate=1000):
+
+    # data['Error'] = np.where(data['FinalAngle'] > 100, 1, 0)
+    # data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
+    if data['ErrorInformationID'] is not None:
+        data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
+        # data['Error'] = np.where((data['ErrorInformationID'] == 4) | (data['ErrorInformationID'] == 5), 1, 0)
     data['CSum'] = data['Error'].cumsum()
     values_cum = []
     values_single = []
