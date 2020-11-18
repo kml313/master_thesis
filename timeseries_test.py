@@ -2,9 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import seasonal_decompose
 from matplotlib import pyplot
-import torch
 
-print(torch.cuda.is_available())
 
 ''''''
 plt.style.use('seaborn-whitegrid')

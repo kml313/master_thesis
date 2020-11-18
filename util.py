@@ -85,7 +85,8 @@ def sample_data(data, rate=1000):
     if data['ErrorInformationID'] is not None:
         data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
         # data['Error'] = np.where((data['ErrorInformationID'] == 4) | (data['ErrorInformationID'] == 5), 1, 0)
-    data['CSum'] = data['Error'].cumsum()
+    #data['Error'] = np.where(data['Status'] == 'NOK', 1, 0)
+   # data['CSum'] = data['Error'].cumsum()
     values_cum = []
     values_single = []
     c_val = 0
@@ -93,7 +94,7 @@ def sample_data(data, rate=1000):
     for index, row in data.iterrows():
         c_val = row['Error'] + c_val
         s_val = row['Error'] + s_val
-        if index % rate == 0:
+        if index % rate == 0 or index == len(data)-1:
             values_single.append([index, s_val, row['Time']])
             values_cum.append([index, c_val, row['Time']])
             s_val = 0
@@ -101,9 +102,27 @@ def sample_data(data, rate=1000):
     cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
     single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
     single_error_data.to_csv(r'C:\error_single.csv')
-    cumulative_error_data.to_csv(r'C:\error_agg.csv')
+    # cumulative_error_data.to_csv(r'C:\error_agg.csv')
     return cumulative_error_data, single_error_data
 
+def create_inout_sequences(input_data, tw):
+    inout_seq = []
+    L = len(input_data)
+    for i in range(L-tw):
+        train_seq = input_data[i:i+tw]
+        train_label = input_data[i+tw:i+tw+1]
+        inout_seq.append((train_seq ,train_label))
+    return inout_seq
+
+def create_sequences(data, seq_length):
+    xs = []
+    ys = []
+    for i in range(len(data)-seq_length-1):
+        x = data[i:(i+seq_length)]
+        y = data[i+seq_length]
+        xs.append(x)
+        ys.append(y)
+    return np.array(xs), np.array(ys)
 '''
 #Error_data.to_csv(r'C:\error.csv')
 #Data.drop(Data.index[Data['FinalAngle'] > 300], inplace = True)

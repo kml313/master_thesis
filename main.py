@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 conn = pyodbc.connect('Driver={SQL Server};'
                       'Server=TDELDEDXTL733;'
-                      'Database=VC_Database;'
+                      'Database=Cummins;'
                       'Trusted_Connection=yes;')
 model = LinearRegression()
 cursor = conn.cursor()
@@ -20,7 +20,7 @@ get_data_query = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.Res
                  'ProgramType.LanguageConstant as Program_Type,' \
                  'ResultTightening.FinalAngle, ResultTightening.FinalTorque, ResultTightening.RundownAngle,' \
                  'ProgramParameter.LimitHigh, ProgramParameter.LimitLow,' \
-                 'ResultStatusType.LanguageConstant as Status, ResultStatusType.ShortDescription' \
+                 'ResultStatusType.LanguageConstant as Status' \
                  ',Error.ShortDescription as Error_Desc ' \
                  'FROM [VC_Database].[ACDC].[Result] AS Result ' \
                  'INNER JOIN [VC_Database].[ACDC].[ResultToTool] AS ResultToTool ' \
@@ -43,7 +43,7 @@ get_data_query = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.Res
                  'full outer JOIN [VC_Database].[ACDC].[ResultToErrorInformation] AS ResultToErrorInformation ' \
                  'ON Result.[ID] = ResultToErrorInformation.ResultID ' \
                  'full outer JOIN [VC_Database].[ACDC].[ErrorInformation] ' \
-                 'as Error ON Error.ResultID = Result.ID ' \
+                 'as Error ON Error.ID = ResultToErrorInformation.ErrorInformationID ' \
                  'where Tool.ID = 11 ORDER BY Result.ResultDateTime'
 
 get_tool_query = 'SELECT [ID] ,[Identifier],[ModelType],[SerialNumber], ' \
@@ -72,7 +72,7 @@ query_cummins = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.Resu
 
 
 def _linear_modelling(data):
-    cumulative_error_data, single_error_data = sample_data(data=data, rate=10000)
+    cumulative_error_data, single_error_data = sample_data(data=data, rate=500)
     x = np.array(cumulative_error_data['tightenings']).reshape((-1, 1))
     y = np.array(cumulative_error_data['error'])
     xs = np.array(single_error_data['tightenings']).reshape((-1, 1))
@@ -120,10 +120,11 @@ def _check_predictions(x, y):
 
 
 # Data = pd.read_sql(get_data_query, conn, index_col='Time', parse_dates=True)
+# Data = pd.read_sql(query_cummins, conn)
 Data = pd.read_sql(query_cummins, conn)
 # print(Data)
 x = pd.DataFrame()
-print(Data)
+# print(Data)
 '''
 x['FinalTorque'] = Data['FinalTorque'].rolling(window=1000).mean()
 plt.plot(x['FinalTorque'])
@@ -137,7 +138,7 @@ print('std FinalAngle', Data['FinalAngle'].std())
 # Data = Data[Data.Status != 'NOK']
 # x.to_csv(r'C:\moving_avr.csv')
 #Data = prepare_data(data=Data)
-# _linear_modelling(data=Data)
+_linear_modelling(data=Data)
 '''
 Data['angle_high'] = Data.FinalAngle > 100
 
@@ -147,5 +148,5 @@ x['angle_high'] = Data['angle_high'].rolling(window=1000).mean()
 plt.plot(x['angle_high'])
 '''
 
-_linear_modelling(data=Data)
-# plt.show()
+# _linear_modelling(data=Data)
+plt.show()
