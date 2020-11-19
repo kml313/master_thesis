@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import itertools
 import statsmodels.api as sm
+from util import adfuller_test
 
 warnings.filterwarnings("ignore")
 plt.style.use('fivethirtyeight')
@@ -19,10 +20,16 @@ plt.rcParams.update({'figure.figsize': (10, 7), 'figure.dpi': 120})
 df = pd.read_csv(r'E:\C\error_single.csv', parse_dates=['Time'])
 df = df.set_index('Time')
 y = df['error']
+adfuller_test(data=y)
+# Test for stationarity, since the time series is skewed hence its non-stationary
+plt.hist(y, color="lightblue")
+plt.show()
+
+# Time series plot
 y.plot()
 plt.show()
 rcParams['figure.figsize'] = 18, 8
-decomposition = sm.tsa.seasonal_decompose(y, model='additive', period=5)
+decomposition = sm.tsa.seasonal_decompose(y, model='additive', period=1)
 fig = decomposition.plot()
 plt.show()
 

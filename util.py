@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-
+from statsmodels.tsa.stattools import adfuller
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
@@ -30,6 +30,17 @@ def prepare_data_graph(data):
     #data.to_csv(r'C:\graph.csv')
 
     return data
+
+def adfuller_test(data):
+    result=adfuller(data)
+    labels = ['ADF Test Statistic','p-value','#Lags Used','Number of Observations']
+    for value,label in zip(result,labels):
+        print(label+' : ' + str(value))
+
+    if result[1] <= 0.05:
+        print("strong evidence against the null hypothesis(Ho), reject the null hypothesis. Data is stationary")
+    else:
+        print("weak evidence against null hypothesis,indicating it is non-stationary ")
 
 
 def prepare_data(data):
