@@ -7,15 +7,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-epochs = 52
+epochs = 150
 
 conn = pyodbc.connect('Driver={SQL Server};'
                       'Server=TDELDEDXTL733;'
                       'Database=Cummins;'
                       'Trusted_Connection=yes;')
-test_data_size = 3
-train_window = 3
-fut_pred = 3
+test_data_size = 12
+train_window = 12
+fut_pred = 12
 cursor = conn.cursor()
 query_cummins = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.ResultDateTime AS Time, ' \
                 'Program.Name AS Program_Name, Result.UnitID,' \
@@ -35,12 +35,8 @@ query_cummins = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.Resu
                 'ON Result.[ID] = ResultToErrorInformation.ResultID ' \
                 'ORDER BY Result.ResultDateTime'
 
-#Data = pd.read_sql(query_cummins, conn)
-single_error_data = pd.read_csv(r'E:\C\error_single.csv')
-# print(Data)
-#x = pd.DataFrame()
-#cumulative_error_data, single_error_data = sample_data(data=Data, rate=5000)
-single_error_data.index = pd.to_datetime(single_error_data['Time'])
+
+single_error_data = pd.read_csv(r'E:\C\error_single.csv', parse_dates=['Time'])
 print(single_error_data.shape)
 fig_size = plt.rcParams["figure.figsize"]
 fig_size[0] = 15
@@ -56,12 +52,11 @@ plt.plot(single_error_data['error'])
 all_data = single_error_data['error'].values.astype(float)
 train_data = all_data[:-test_data_size]
 test_data = all_data[-test_data_size:]
-print(len(train_data))
-print(len(test_data))
 scaler = MinMaxScaler(feature_range=(-1, 1))
 train_data_normalized = scaler.fit_transform(train_data.reshape(-1, 1))
 train_data_normalized = torch.FloatTensor(train_data_normalized).view(-1)
 train_inout_seq = create_inout_sequences(train_data_normalized, train_window)
+print(train_inout_seq[:5])
 
 
 class LSTM(nn.Module):
@@ -115,7 +110,8 @@ for i in range(fut_pred):
         test_inputs.append(model(seq).item())
 
 actual_predictions = scaler.inverse_transform(np.array(test_inputs[train_window:] ).reshape(-1, 1))
-x = np.arange(86, 89, 1)
+print(actual_predictions)
+x = np.arange(167, 144, 1)
 plt.title('Month vs Passenger')
 plt.ylabel('Total Passengers')
 plt.grid(True)

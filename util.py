@@ -112,7 +112,7 @@ def sample_data(data, rate=1000):
 
     cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
     single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
-    single_error_data.to_csv(r'C:\error_single.csv')
+    single_error_data.to_csv(r'C:\error_single_show.csv')
     # cumulative_error_data.to_csv(r'C:\error_agg.csv')
     return cumulative_error_data, single_error_data
 
