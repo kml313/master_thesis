@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from pylab import rcParams
 import numpy as np
 import pandas as pd
-import itertools
 import statsmodels.api as sm
-from util import adfuller_test
+from util import adfuller_test, mean_absolute_percentage_error, mean_squared_error
+from pmdarima import auto_arima
 
 warnings.filterwarnings("ignore")
 plt.style.use('fivethirtyeight')
@@ -33,33 +33,24 @@ decomposition = sm.tsa.seasonal_decompose(y, model='additive', period=5)
 fig = decomposition.plot()
 plt.show()
 
-p = d = q = range(0, 2)
-pdq = list(itertools.product(p, d, q))
-seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))]
-print('Examples of parameter combinations for Seasonal ARIMA...')
-print('SARIMAX: {} x {}'.format(pdq[1], seasonal_pdq[1]))
-print('SARIMAX: {} x {}'.format(pdq[1], seasonal_pdq[2]))
-print('SARIMAX: {} x {}'.format(pdq[2], seasonal_pdq[3]))
-print('SARIMAX: {} x {}'.format(pdq[2], seasonal_pdq[4]))
+arima_model = auto_arima(y, start_p=1,
+                              start_q=1,
+                              test="adf",
+                              trace=True)
+print(arima_model)
 
-for param in pdq:
-    for param_seasonal in seasonal_pdq:
-        try:
-            mod = sm.tsa.statespace.SARIMAX(y,
-                                            order=param,
-                                            seasonal_order=param_seasonal,
-                                            enforce_stationarity=False,
-                                            enforce_invertibility=False)
-            results = mod.fit()
-            print('ARIMA{}x{}12 - AIC:{}'.format(param, param_seasonal, results.aic))
-        except:
-            continue
-
+mod = sm.tsa.statespace.SARIMAX(y,
+                                order=(0, 1, 1),
+                                seasonal_order=(0, 0, 0, 5),
+                                enforce_stationarity=False,
+                                enforce_invertibility=False)
+'''
 mod = sm.tsa.statespace.SARIMAX(y,
                                 order=(1, 1, 1),
                                 seasonal_order=(1, 1, 0, 5),
                                 enforce_stationarity=False,
                                 enforce_invertibility=False)
+'''
 results = mod.fit()
 print(results.summary().tables[1])
 results.plot_diagnostics(figsize=(16, 8))
@@ -79,8 +70,10 @@ ax.set_ylabel('Observed')
 
 y_forecasted = pred.predicted_mean
 y_truth = y['2018-03-21':]
-mse = ((y_forecasted - y_truth) ** 2).mean()
-print('The Mean Squared Error of our forecasts is {}'.format(round(mse, 2)))
+mse = mean_squared_error(y_truth, y_forecasted)
+
+print('MAPE: ', mean_absolute_percentage_error(y_forecasted, y_truth))
+print('The Mean Squared Error of our forecasts is {}'.format(mse))
 print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
 
 plt.legend()

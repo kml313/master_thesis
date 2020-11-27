@@ -7,6 +7,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from statsmodels.tsa.stattools import adfuller
 pd.options.mode.chained_assignment = None  # default='warn'
+import pmdarima as pmd
 
 
 def prepare_data_graph(data):
@@ -125,6 +126,7 @@ def create_inout_sequences(input_data, tw):
         inout_seq.append((train_seq ,train_label))
     return inout_seq
 
+
 def create_sequences(data, seq_length):
     xs = []
     ys = []
@@ -134,6 +136,26 @@ def create_sequences(data, seq_length):
         xs.append(x)
         ys.append(y)
     return np.array(xs), np.array(ys)
+
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+
+
+def arimamodel(timeseriesarray):
+    autoarima_model = pmd.auto_arima(timeseriesarray,
+                              start_p=1,
+                              start_q=1,
+                              test="adf",
+                              trace=True)
+    return autoarima_model
+
+
+def mean_squared_error(y_true, y_pred):
+    return round(((y_pred - y_true) ** 2).mean(), 2)
+
+
 '''
 #Error_data.to_csv(r'C:\error.csv')
 #Data.drop(Data.index[Data['FinalAngle'] > 300], inplace = True)
