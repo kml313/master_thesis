@@ -7,6 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 from util import adfuller_test, mean_absolute_percentage_error, mean_squared_error
 from pmdarima import auto_arima
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 warnings.filterwarnings("ignore")
 plt.style.use('fivethirtyeight')
@@ -24,7 +25,6 @@ y = df['error']
 
 # Test for stationarity, since the time series is skewed hence its non-stationary
 adfuller_test(data=y)
-
 # Time series plot
 y.plot()
 plt.show()
@@ -57,11 +57,11 @@ results.plot_diagnostics(figsize=(16, 8))
 plt.show()
 
 
-pred = results.get_prediction(start=pd.to_datetime('2018-03-21'), dynamic=False)
+pred = results.get_prediction(start=pd.to_datetime('2018-03-01'), dynamic=False)
 # pred = results.get_prediction(start=pd.to_datetime('2018-01-01'), dynamic=False)
 pred_ci = pred.conf_int()
 ax = y['2017':].plot(label='observed')
-pred.predicted_mean.plot(ax=ax, label='One-step ahead Forecast', alpha=.7, figsize=(14, 7))
+pred.predicted_mean.plot(ax=ax, label='Forecast', alpha=.7, figsize=(14, 7))
 ax.fill_between(pred_ci.index,
                 pred_ci.iloc[:, 0],
                 pred_ci.iloc[:, 1], color='k', alpha=.2)
@@ -69,10 +69,12 @@ ax.set_xlabel('Date')
 ax.set_ylabel('Observed')
 
 y_forecasted = pred.predicted_mean
-y_truth = y['2018-03-21':]
+y_truth = y['2018-03-01':]
 mse = mean_squared_error(y_truth, y_forecasted)
+mape = mean_absolute_percentage_error(y_forecasted, y_truth)
 
-print('MAPE: ', mean_absolute_percentage_error(y_forecasted, y_truth))
+print('MAPE: ', mape)
+print('Accuracy is :', 100 - mape, '%')
 print('The Mean Squared Error of our forecasts is {}'.format(mse))
 print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
 

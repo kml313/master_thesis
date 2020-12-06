@@ -23,17 +23,17 @@ Double Exponential Smoothing
 Triple Exponential Smoothing
 '''
 fit1 = ExponentialSmoothing(train, seasonal_periods=5, trend='add', seasonal='add').fit(smoothing_level=0.1)
+print(fit1.summary())
 #fit1 = ExponentialSmoothing(train, seasonal_periods=5, trend='add', seasonal='add').fit(smoothing_level=0.2)
 
 test_predictions = fit1.forecast(30)
 train.plot(legend=True,label='TRAIN')
 test.plot(legend=True,label='TEST',figsize=(12,8))
 test_predictions.plot(legend=True,label='PREDICTION');
-print(test)
-print("---------------------------------")
-print(test_predictions)
 mse = mean_squared_error(test,test_predictions)
-print('Mape: ', mean_absolute_percentage_error(test,test_predictions))
+mape = mean_absolute_percentage_error(test,test_predictions)
+print('Mape: ', mape)
+print('Accuracy is :', 100 - mape, '%')
 print('The Mean Squared Error of our forecasts is {}'.format(mse))
 print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
 plt.show()

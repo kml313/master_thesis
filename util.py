@@ -1,13 +1,10 @@
-import gzip
 import struct
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
 from statsmodels.tsa.stattools import adfuller
+
 pd.options.mode.chained_assignment = None  # default='warn'
-import pmdarima as pmd
+from pmdarima import auto_arima
 
 
 def prepare_data_graph(data):
@@ -15,7 +12,7 @@ def prepare_data_graph(data):
     data['remove'] = False
 
     for index, row in data.iterrows():
-        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1]\
+        val = index < len(data) - 1 and row['GraphValues'] and data['Result_ID'][index] == data['Result_ID'][index + 1] \
               and data['Error_Desc'][index] == data['Error_Desc'][index + 1]
         if val:
             data['GraphValues2'][index] = data['GraphValues'][index + 1]
@@ -28,15 +25,16 @@ def prepare_data_graph(data):
     data['remove'] = data.Result_ID.eq(data.Result_ID.shift(-1)) & (data.Error_Desc != "Angle high")
     data = data.drop(data.index[data.remove])
     del data['remove']
-    #data.to_csv(r'C:\graph.csv')
+    # data.to_csv(r'C:\graph.csv')
 
     return data
 
+
 def adfuller_test(data):
-    result=adfuller(data)
-    labels = ['ADF Test Statistic','p-value','#Lags Used','Number of Observations']
-    for value,label in zip(result,labels):
-        print(label+' : ' + str(value))
+    result = adfuller(data)
+    labels = ['ADF Test Statistic', 'p-value', '#Lags Used', 'Number of Observations']
+    for value, label in zip(result, labels):
+        print(label + ' : ' + str(value))
 
     if result[1] <= 0.05:
         print("strong evidence against the null hypothesis(Ho), reject the null hypothesis. Data is stationary")
@@ -91,14 +89,13 @@ def _hex_str_to_array(data: str, num_bytes=4) -> np.ndarray:
 
 
 def sample_data(data, rate=1000):
-
     # data['Error'] = np.where(data['FinalAngle'] > 100, 1, 0)
     # data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
     if data['ErrorInformationID'] is not None:
         data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
         # data['Error'] = np.where((data['ErrorInformationID'] == 4) | (data['ErrorInformationID'] == 5), 1, 0)
-    #data['Error'] = np.where(data['Status'] == 'NOK', 1, 0)
-   # data['CSum'] = data['Error'].cumsum()
+    # data['Error'] = np.where(data['Status'] == 'NOK', 1, 0)
+    # data['CSum'] = data['Error'].cumsum()
     values_cum = []
     values_single = []
     c_val = 0
@@ -106,7 +103,7 @@ def sample_data(data, rate=1000):
     for index, row in data.iterrows():
         c_val = row['Error'] + c_val
         s_val = row['Error'] + s_val
-        if index % rate == 0 or index == len(data)-1:
+        if index % rate == 0 or index == len(data) - 1:
             values_single.append([index, s_val, row['Time']])
             values_cum.append([index, c_val, row['Time']])
             s_val = 0
@@ -117,22 +114,23 @@ def sample_data(data, rate=1000):
     # cumulative_error_data.to_csv(r'C:\error_agg.csv')
     return cumulative_error_data, single_error_data
 
+
 def create_inout_sequences(input_data, tw):
     inout_seq = []
     L = len(input_data)
-    for i in range(L-tw):
-        train_seq = input_data[i:i+tw]
-        train_label = input_data[i+tw:i+tw+1]
-        inout_seq.append((train_seq ,train_label))
+    for i in range(L - tw):
+        train_seq = input_data[i:i + tw]
+        train_label = input_data[i + tw:i + tw + 1]
+        inout_seq.append((train_seq, train_label))
     return inout_seq
 
 
 def create_sequences(data, seq_length):
     xs = []
     ys = []
-    for i in range(len(data)-seq_length-1):
-        x = data[i:(i+seq_length)]
-        y = data[i+seq_length]
+    for i in range(len(data) - seq_length - 1):
+        x = data[i:(i + seq_length)]
+        y = data[i + seq_length]
         xs.append(x)
         ys.append(y)
     return np.array(xs), np.array(ys)
@@ -144,11 +142,11 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 
 def arimamodel(timeseriesarray):
-    autoarima_model = pmd.auto_arima(timeseriesarray,
-                              start_p=1,
-                              start_q=1,
-                              test="adf",
-                              trace=True)
+    autoarima_model = auto_arima(timeseriesarray,
+                                 start_p=1,
+                                 start_q=1,
+                                 test="adf",
+                                 trace=True)
     return autoarima_model
 
 
