@@ -33,10 +33,13 @@ def main():
     test = y.iloc[-30:]
 
     extrapolation = fourierExtrapolation(train, 30)
-    test_predictions = extrapolation[-30:]
+    pl.title('Graph starting from 350k tightening')
+    pl.xlabel('Sampled Tightening (1 unit = 500 Tightening)')
+    pl.ylabel('Number of NOKs')
     pl.plot(np.arange(0, y.size), y, 'g', label='actual', linewidth=3)
     pl.plot(np.arange(0, train.size), train, 'b', label='train', linewidth=3)
     pl.plot(np.arange(0, extrapolation.size), extrapolation, 'r', label='extrapolation')
+    test_predictions = extrapolation[-30:]
     mse = mean_squared_error(test, test_predictions)
     mape = mean_absolute_percentage_error(test, test_predictions)
     print('Mape: ', mape)
