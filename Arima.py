@@ -7,7 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 from util import adfuller_test, mean_absolute_percentage_error, mean_squared_error
 from pmdarima import auto_arima
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import copy
 
 warnings.filterwarnings("ignore")
 plt.style.use('fivethirtyeight')
@@ -33,8 +33,12 @@ decomposition = sm.tsa.seasonal_decompose(y, model='additive', period=5)
 fig = decomposition.plot()
 plt.show()
 
-arima_model = auto_arima(y, start_p=1,
-                              start_q=1,
+train = y.iloc[:-30]
+test_pred = y.iloc[-30:]
+test_actual = copy.deepcopy(y.iloc[-30:])
+
+arima_model = auto_arima(train, start_p=0,
+                              start_q=0,
                               test="adf",
                               trace=True)
 print(arima_model)
@@ -43,54 +47,27 @@ mod = sm.tsa.statespace.SARIMAX(y,
                                 order=(0, 1, 1),
                                 enforce_stationarity=False,
                                 enforce_invertibility=False)
-'''
-mod = sm.tsa.statespace.SARIMAX(y,
-                                order=(1, 1, 1),
-                                seasonal_order=(1, 1, 0, 5),
-                                enforce_stationarity=False,
-                                enforce_invertibility=False)
-'''
-results = mod.fit()
+
+results = arima_model
 print(results.summary().tables[1])
 results.plot_diagnostics(figsize=(16, 8))
 plt.show()
 
+predicted = arima_model.predict(n_periods = len(test_pred))
 
-pred = results.get_prediction(start=pd.to_datetime('2018-03-01'), dynamic=False)
-print(pred)
-# pred = results.get_prediction(start=pd.to_datetime('2018-01-01'), dynamic=False)
-pred_ci = pred.conf_int()
-ax = y['2017':].plot(label='observed')
-pred.predicted_mean.plot(ax=ax, label='Forecast', alpha=.7, figsize=(14, 7))
-ax.fill_between(pred_ci.index,
-                pred_ci.iloc[:, 0],
-                pred_ci.iloc[:, 1], color='k', alpha=.2)
-ax.set_xlabel('Date')
-ax.set_ylabel('Observed')
+for i in range(len(test_pred)):
+    test_pred[i] = predicted[i]
 
-y_forecasted = pred.predicted_mean
-y_truth = y['2018-03-01':]
+train.plot(legend=True,label='TRAIN')
+test_pred.plot(legend=True,label='Pridict',figsize=(12,8))
+test_actual.plot(legend=True,label='Actual',figsize=(12,8))
 
-mse = mean_squared_error(y_truth, y_forecasted)
-mape = mean_absolute_percentage_error(y_forecasted, y_truth)
+mse = mean_squared_error(test_actual, test_pred)
+mape = mean_absolute_percentage_error(test_actual, test_pred)
 
 print('MAPE: ', mape)
 print('Accuracy is :', 100 - mape, '%')
 print('The Mean Squared Error of our forecasts is {}'.format(mse))
 print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
 
-plt.legend()
-plt.show()
-
-pred_uc = results.get_forecast(steps=10)
-pred_ci = pred_uc.conf_int()
-print(pred_uc)
-ax = y.plot(label='observed', figsize=(14, 7))
-pred_uc.predicted_mean.plot(ax=ax, label='Forecast')
-ax.fill_between(pred_ci.index,
-                pred_ci.iloc[:, 0],
-                pred_ci.iloc[:, 1], color='k', alpha=.25)
-ax.set_xlabel('Date')
-ax.set_ylabel('Errors')
-plt.legend()
 plt.show()

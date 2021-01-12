@@ -125,11 +125,16 @@ Data = pd.read_sql(query_cummins, conn)
 # print(Data)
 x = pd.DataFrame()
 # print(Data)
-'''
+
 x['FinalTorque'] = Data['FinalTorque'].rolling(window=1000).mean()
 plt.plot(x['FinalTorque'])
-print(Data['FinalAngle'].corr(Data['RundownAngle']))
+plt.title('Final toque moving average')
+plt.xlabel('Number of tightening')
+plt.ylabel('Torque (Nm)')
+plt.show()
 '''
+print(Data['FinalAngle'].corr(Data['RundownAngle']))
+
 x['FinalTorque'] = Data['FinalTorque'].rolling(window=1000).mean()
 plt.plot(x['FinalTorque'])
 
@@ -140,6 +145,7 @@ print('std FinalAngle', Data['FinalAngle'].std())
 #Data = prepare_data(data=Data)
 _linear_modelling(data=Data)
 '''
+'''
 Data['angle_high'] = Data.FinalAngle > 100
 
 Data["angle_high"] = Data["angle_high"].astype(int)
@@ -149,4 +155,3 @@ plt.plot(x['angle_high'])
 '''
 
 # _linear_modelling(data=Data)
-plt.show()

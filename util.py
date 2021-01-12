@@ -47,7 +47,6 @@ def prepare_data(data):
     data['remove'] = data.Result_ID.eq(data.Result_ID.shift())
     data = data.drop(data.index[data.remove])
     del data['remove']
-    data.to_csv(r'C:\Volvo.csv')
     return data
 
 
@@ -89,13 +88,9 @@ def _hex_str_to_array(data: str, num_bytes=4) -> np.ndarray:
 
 
 def sample_data(data, rate=1000):
-    # data['Error'] = np.where(data['FinalAngle'] > 100, 1, 0)
-    # data['Error'] = np.where(data['Error_Desc'] == 'Angle high', 1, 0)
     if data['ErrorInformationID'] is not None:
         data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
         # data['Error'] = np.where((data['ErrorInformationID'] == 4) | (data['ErrorInformationID'] == 5), 1, 0)
-    # data['Error'] = np.where(data['Status'] == 'NOK', 1, 0)
-    # data['CSum'] = data['Error'].cumsum()
     values_cum = []
     values_single = []
     c_val = 0
@@ -110,7 +105,7 @@ def sample_data(data, rate=1000):
 
     cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
     single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
-    single_error_data.to_csv(r'C:\error_single_show.csv')
+    # single_error_data.to_csv(r'C:\error_single_show.csv')
     # cumulative_error_data.to_csv(r'C:\error_agg.csv')
     return cumulative_error_data, single_error_data
 
