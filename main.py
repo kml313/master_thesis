@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-from util import prepare_data_graph, sample_data, prepare_data
+from util import prepare_data_graph, sample_data, prepare_data, get_data
 import pyodbc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -118,14 +118,19 @@ def _check_predictions(x, y):
 
     plt.show()
 
-
+"""
 # Data = pd.read_sql(get_data_query, conn, index_col='Time', parse_dates=True)
 # Data = pd.read_sql(query_cummins, conn)
 Data = pd.read_sql(query_cummins, conn)
 # print(Data)
 x = pd.DataFrame()
 # print(Data)
-
+Data = prepare_data(data=Data)
+sam_data = sample_data(Data, rate=500)
+"""
+x = pd.DataFrame()
+data = get_data()
+Data = pd.read_sql(query_cummins, conn)
 x['FinalTorque'] = Data['FinalTorque'].rolling(window=1000).mean()
 plt.plot(x['FinalTorque'])
 plt.title('Final toque moving average')

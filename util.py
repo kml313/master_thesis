@@ -1,11 +1,44 @@
 import struct
 import numpy as np
 import pandas as pd
+import pyodbc
 from statsmodels.tsa.stattools import adfuller
 
 pd.options.mode.chained_assignment = None  # default='warn'
 from pmdarima import auto_arima
 
+conn = pyodbc.connect('Driver={SQL Server};'
+                      'Server=TDELDEDXTL733;'
+                      'Database=Cummins;'
+                      'Trusted_Connection=yes;')
+cursor = conn.cursor()
+query_cummins = 'SELECT Result.[ID] AS Result_ID, Tool.ID as ToolId, Result.ResultDateTime AS Time, ' \
+                'Program.Name AS Program_Name, Result.UnitID,' \
+                'ResultTightening.FinalAngle, ResultTightening.FinalTorque, ResultTightening.RundownAngle,' \
+                'Result.ResultStatusTypeID as Status, ResultToErrorInformation.ErrorInformationID ' \
+                'FROM [Cummins].[dbo].[Result] AS Result ' \
+                'INNER JOIN [Cummins].[dbo].[ResultToTool] AS ResultToTool ' \
+                'ON Result.ID = ResultToTool.ResultID ' \
+                'INNER JOIN [Cummins].[dbo].[Tool] AS Tool ' \
+                'ON ResultToTool.ToolID = Tool.ID ' \
+                'full outer JOIN [Cummins].[dbo].[ResultTightening] AS ResultTightening ' \
+                'ON Result.ID = ResultTightening.ResultID ' \
+                'full outer JOIN [Cummins].[dbo].[Program] AS Program ' \
+                'ON Result.ProgramID = Program.ID ' \
+                '/*For getting error info*/ ' \
+                'full outer JOIN [Cummins].[dbo].[ResultToErrorInformation] AS ResultToErrorInformation ' \
+                'ON Result.[ID] = ResultToErrorInformation.ResultID ' \
+                'ORDER BY Result.ResultDateTime'
+
+
+def get_data():
+    Data = pd.read_sql(query_cummins, conn)
+    Data = prepare_data(data=Data)
+    single_error_data = sample_data(Data, rate=500)
+    filtered_data = single_error_data[702:]
+    sample_list = range(1, len(filtered_data) + 1)
+    filtered_data['Sample'] = sample_list
+    return filtered_data
 
 def prepare_data_graph(data):
     data["GraphValues2"] = np.nan
@@ -88,26 +121,20 @@ def _hex_str_to_array(data: str, num_bytes=4) -> np.ndarray:
 
 
 def sample_data(data, rate=1000):
-    if data['ErrorInformationID'] is not None:
-        data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
-        # data['Error'] = np.where((data['ErrorInformationID'] == 4) | (data['ErrorInformationID'] == 5), 1, 0)
-    values_cum = []
     values_single = []
-    c_val = 0
     s_val = 0
+    if data['ErrorInformationID'] is not None:
+        # Including only torque related errors
+        data['Error'] = np.where(data['ErrorInformationID'] == 4, 1, 0)
+
     for index, row in data.iterrows():
-        c_val = row['Error'] + c_val
         s_val = row['Error'] + s_val
         if index % rate == 0 or index == len(data) - 1:
-            values_single.append([index, s_val, row['Time']])
-            values_cum.append([index, c_val, row['Time']])
+            values_single.append([s_val])
             s_val = 0
 
-    cumulative_error_data = pd.DataFrame(values_cum, columns=['tightenings', 'error', 'Time'])
-    single_error_data = pd.DataFrame(values_single, columns=['tightenings', 'error', 'Time'])
-    # single_error_data.to_csv(r'C:\error_single_show.csv')
-    # cumulative_error_data.to_csv(r'C:\error_agg.csv')
-    return cumulative_error_data, single_error_data
+    single_error_data = pd.DataFrame(values_single, columns=['error'])
+    return single_error_data
 
 
 def create_inout_sequences(input_data, tw):
